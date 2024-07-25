@@ -2,7 +2,7 @@ pipeline {
     agent any
     tools {
         maven 'Maven 3.6.3' // Configura tu herramienta Maven
-        jdk 'JDK11' // Configura tu herramienta JDK
+        jdk 'JDK17' // Configura tu herramienta JDK
     }
     environment {
         scannerHome = tool 'SonarQube Scanner'
