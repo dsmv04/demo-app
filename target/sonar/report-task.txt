@@ -1,0 +1,6 @@
+projectKey=demo-qube
+serverUrl=http://localhost:9000
+serverVersion=10.6.0.92116
+dashboardUrl=http://localhost:9000/dashboard?id=demo-qube
+ceTaskId=e684477d-76a6-4704-a2a8-2f6ebe0b2865
+ceTaskUrl=http://localhost:9000/api/ce/task?id=e684477d-76a6-4704-a2a8-2f6ebe0b2865
