@@ -1,31 +1,38 @@
 pipeline {
     agent any
 
-    environment {
-        SONARQUBE_URL = 'http://localhost:9000'
-        SONARQUBE_TOKEN = credentials('sonarqube-token')
-        NEXUS_URL = 'http://localhost:8081'
-        NEXUS_REPOSITORY = 'maven-releases'
-        NEXUS_CREDENTIALS_ID = 'nexus-credentials'
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/dsmv04/demo-app', branch: 'main'
+                script {
+                    node('main') {
+                        checkout([$class: 'GitSCM', 
+                            branches: [[name: 'main']], 
+                            userRemoteConfigs: [[url: 'https://github.com/dsmv04/demo-app']]
+                        ])
+                    }
+                }
             }
         }
 
         stage('Build') {
             steps {
-                bat 'mvn clean package'
+                script {
+                    node('main') {
+                        bat 'mvn clean package'
+                    }
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    bat 'mvn sonar:sonar'
+                script {
+                    node('master') {
+                        withSonarQubeEnv('SonarQube') {
+                            bat 'mvn sonar:sonar'
+                        }
+                    }
                 }
             }
         }
@@ -33,24 +40,30 @@ pipeline {
         stage('Nexus Deployment') {
             steps {
                 script {
-                    def server = Artifactory.server 'nexus-server'
-                    def uploadSpec = """{
-                        "files": [
-                            {
-                                "pattern": "target/*.jar",
-                                "target": "${NEXUS_REPOSITORY}/"
-                            }
-                        ]
-                    }"""
-                    server.upload spec: uploadSpec
+                    node('master') {
+                        def server = Artifactory.server 'nexus-server'
+                        def uploadSpec = """{
+                            "files": [
+                                {
+                                    "pattern": "target/*.jar",
+                                    "target": "${NEXUS_REPOSITORY}/"
+                                }
+                            ]
+                        }"""
+                        server.upload spec: uploadSpec
+                    }
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                script {
+                    node('main') {
+                        timeout(time: 1, unit: 'HOURS') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    }
                 }
             }
         }
@@ -58,8 +71,10 @@ pipeline {
 
     post {
         always {
-            node {
-                cleanWs()
+            script {
+                node('master') {
+                    cleanWs()
+                }
             }
         }
         failure {
