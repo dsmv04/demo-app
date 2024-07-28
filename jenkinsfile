@@ -13,11 +13,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    sh 'git config --global user.email "you@example.com"'
-                    sh 'git config --global user.name "Your Name"'
-                }
-                git branch: 'master', url: 'https://github.com/dsmv04/demo-app'
+                git branch: 'main', url: 'https://github.com/dsmv04/demo-app'
             }
         }
 
@@ -65,10 +61,8 @@ pipeline {
 
     post {
         always {
-            node {
-                echo 'Cleaning up...'
-                cleanWs()
-            }
+            echo 'Cleaning up...'
+            cleanWs()
         }
         success {
             echo 'Build, SonarQube analysis, and Nexus deployment completed successfully.'
