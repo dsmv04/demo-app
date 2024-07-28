@@ -1,36 +1,80 @@
 pipeline {
     agent any
-    tools {
-        maven 'Maven 3.6.3' // Configura tu herramienta Maven
-        jdk 'JDK17' // Configura tu herramienta JDK
-    }
+
     environment {
-        scannerHome = tool 'SonarQube Scanner'
+        // Configurar las variables de entorno necesarias para SonarQube
+        SONARQUBE_URL = 'http://192.168.1.98:9000'
+        SONARQUBE_TOKEN = credentials('sonar-token')
+        // Variables de entorno para Nexus OSS
+        NEXUS_URL = 'http://nexus-oss.example.com'
+        NEXUS_REPOSITORY = 'maven-releases'
     }
+
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                script {
+                    sh 'git config --global user.email "you@example.com"'
+                    sh 'git config --global user.name "Your Name"'
+                }
+                git branch: 'master', url: 'https://github.com/dsmv04/demo-app'
             }
         }
+
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                script {
+                    sh 'mvn clean verify'
+                }
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                script {
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'mvn sonar:sonar -Dsonar.projectKey=demo-qube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.login=${SONARQUBE_TOKEN}'
+                    }
                 }
             }
         }
-        stage('Quality Gate') {
+
+        stage('Nexus Deployment') {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                        sh "mvn deploy -DaltDeploymentRepository=${NEXUS_REPOSITORY}::default::${NEXUS_URL}/repository/${NEXUS_REPOSITORY} -Dnexus.user=${NEXUS_USER} -Dnexus.password=${NEXUS_PASS}"
+                    }
                 }
             }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    timeout(time: 1, unit: 'MINUTES') {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            node {
+                echo 'Cleaning up...'
+                cleanWs()
+            }
+        }
+        success {
+            echo 'Build, SonarQube analysis, and Nexus deployment completed successfully.'
+        }
+        failure {
+            echo 'Build, SonarQube analysis, or Nexus deployment failed.'
         }
     }
 }
