@@ -2,35 +2,30 @@ pipeline {
     agent any
 
     environment {
-        // Configurar las variables de entorno necesarias para SonarQube
-        SONARQUBE_URL = 'http://192.168.1.98:9000'
-        SONARQUBE_TOKEN = credentials('sonar-token')
-        // Variables de entorno para Nexus OSS
-        NEXUS_URL = 'http://nexus-oss.example.com'
+        SONARQUBE_URL = 'http://localhost:9000'
+        SONARQUBE_TOKEN = credentials('sonarqube-token')
+        NEXUS_URL = 'http://localhost:8081'
         NEXUS_REPOSITORY = 'maven-releases'
+        NEXUS_CREDENTIALS_ID = 'nexus-credentials'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/dsmv04/demo-app'
+                git url: 'https://github.com/dsmv04/demo-app', branch: 'main'
             }
         }
 
         stage('Build') {
             steps {
-                script {
-                    sh 'mvn clean verify'
-                }
+                bat 'mvn clean package'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    withSonarQubeEnv('SonarQube') {
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=demo-qube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.login=${SONARQUBE_TOKEN}'
-                    }
+                withSonarQubeEnv('SonarQube') {
+                    bat 'mvn sonar:sonar'
                 }
             }
         }
@@ -38,22 +33,24 @@ pipeline {
         stage('Nexus Deployment') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        sh "mvn deploy -DaltDeploymentRepository=${NEXUS_REPOSITORY}::default::${NEXUS_URL}/repository/${NEXUS_REPOSITORY} -Dnexus.user=${NEXUS_USER} -Dnexus.password=${NEXUS_PASS}"
-                    }
+                    def server = Artifactory.server 'nexus-server'
+                    def uploadSpec = """{
+                        "files": [
+                            {
+                                "pattern": "target/*.jar",
+                                "target": "${NEXUS_REPOSITORY}/"
+                            }
+                        ]
+                    }"""
+                    server.upload spec: uploadSpec
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                script {
-                    timeout(time: 1, unit: 'MINUTES') {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
-                        }
-                    }
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -61,11 +58,7 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up...'
             cleanWs()
-        }
-        success {
-            echo 'Build, SonarQube analysis, and Nexus deployment completed successfully.'
         }
         failure {
             echo 'Build, SonarQube analysis, or Nexus deployment failed.'
