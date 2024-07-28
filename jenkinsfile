@@ -58,7 +58,7 @@ pipeline {
 
     post {
         always {
-            node {
+            node('your-label-here') {
                 cleanWs()
             }
         }
