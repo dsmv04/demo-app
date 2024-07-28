@@ -58,7 +58,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
         failure {
             echo 'Build, SonarQube analysis, or Nexus deployment failed.'
