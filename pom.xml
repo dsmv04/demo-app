@@ -15,7 +15,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+    <!-- PostgreSQL dependency -->
     <dependency>
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
@@ -64,6 +64,22 @@
           <failOnMissingWebXml>false</failOnMissingWebXml>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.8.2</version>
+        <configuration>
+          <repositoryId>nexus</repositoryId>
+          <url>http://your-nexus-repository-url/repository/maven-d</url>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+  
+  <distributionManagement>
+    <repository>
+      <id>nexus</id>
+      <url>http://your-nexus-repository-url/repository/maven-d</url>
+    </repository>
+  </distributionManagement>
 </project>
