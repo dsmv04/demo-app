@@ -7,6 +7,18 @@
   <version>1.0-SNAPSHOT</version>
   <name>demo-app Maven Webapp</name>
   <url>http://maven.apache.org</url>
+
+  <distributionManagement>
+    <repository>
+      <id>nexus</id>
+      <url>http://localhost:8081/repository/maven-d/</url>
+    </repository>
+    <snapshotRepository>
+      <id>nexus</id>
+      <url>http://localhost:8081/repository/maven-d/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -14,31 +26,25 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- PostgreSQL dependency -->
     <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>42.7.2</version>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.2</version>
     </dependency>
-
-    <!-- Servlet API -->
     <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>javax.servlet-api</artifactId>
-        <version>4.0.1</version>
-        <scope>provided</scope>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+      <scope>provided</scope>
     </dependency>
-
-    <!-- JSP API -->
     <dependency>
-        <groupId>javax.servlet.jsp</groupId>
-        <artifactId>javax.servlet.jsp-api</artifactId>
-        <version>2.3.3</version>
-        <scope>provided</scope>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>javax.servlet.jsp-api</artifactId>
+      <version>2.3.3</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
-  
+
   <build>
     <finalName>demo-app</finalName>
     <plugins>
@@ -64,22 +70,6 @@
           <failOnMissingWebXml>false</failOnMissingWebXml>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.8.2</version>
-        <configuration>
-          <repositoryId>nexus</repositoryId>
-          <url>http://http://localhost:8081//repository/maven-d</url>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
-  
-  <distributionManagement>
-    <repository>
-      <id>nexus</id>
-      <url>http://http://localhost:8081//repository/maven-d</url>
-    </repository>
-  </distributionManagement>
 </project>
